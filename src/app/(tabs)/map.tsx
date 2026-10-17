@@ -1,177 +1,134 @@
 import { Ionicons } from '@expo/vector-icons';
-import {
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import * as Location from 'expo-location';
+import * as Speech from 'expo-speech';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
-interface Precinct {
+interface Station {
   id: string;
   name: string;
-  address: string;
-  hours: string;
-  phone: string;
   distance: string;
+  address: string;
+  contactName: string;
+  contactTitle: string;
+  hours: string;
 }
 
-const LOCAL_PRECINCTS: Precinct[] = [
-  {
-    id: '1',
-    name: 'City Central Police Department (Cyber Crimes Division)',
-    address: '450 E Main St, Downtown',
-    hours: 'Open 24/7 (Cyber Desk: Mon-Fri 8am - 6pm)',
-    phone: '(555) 019-2831',
-    distance: '1.4 miles away',
-  },
-  {
-    id: '2',
-    name: 'North Precinct Substation',
-    address: '1200 Northside Blvd',
-    hours: 'Open 24/7',
-    phone: '(555) 019-4420',
-    distance: '3.8 miles away',
-  },
-  {
-    id: '3',
-    name: 'University Campus Safety & Police Hub',
-    address: '800 College Way (Student Union Bldg B)',
-    hours: 'Open 24/7',
-    phone: '(555) 019-9110',
-    distance: '0.6 miles away',
-  },
-];
-
-const REQUIRED_DOCUMENTS = [
-  'Printed bank statements or credit card logs highlighting unauthorized fraudulent charges.',
-  'Screenshots of phishing text messages, emails, or social media DMs (include sender handles & timestamps).',
-  'Your physical government-issued photo ID (Driver’s License, Passport, or Student ID).',
-  'Case reference numbers if you already filed an online report with the FBI IC3 (ic3.gov).',
-];
-
 export default function MapScreen() {
-  const callNumber = (phoneNumber: string) => {
-    Linking.openURL(`tel:${phoneNumber}`);
+  const isDark = useColorScheme() === 'dark';
+  const theme = {
+    bg: isDark ? '#1F2937' : '#F9FAFB',
+    card: isDark ? '#374151' : '#FFFFFF',
+    text: isDark ? '#F3F4F6' : '#1F2937',
+    subText: isDark ? '#9CA3AF' : '#6B7280',
+    primary: isDark ? '#818CF8' : '#6366F1',
+    success: isDark ? '#34D399' : '#10B981',
+    border: isDark ? '#4B5563' : '#E5E7EB',
+  };
+
+  const [locationStatus, setLocationStatus] = useState('Locating nearby precincts...');
+  const [stations, setStations] = useState<Station[]>([]);
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationStatus('Location permission denied. Showing defaults.');
+      } else {
+        await Location.getCurrentPositionAsync({});
+        setLocationStatus('Location Secured. Nearest safe havens found.');
+      }
+      
+      // Simulate finding stations near the user
+      setStations([
+        { id: '1', name: 'Central District Police Department', distance: '1.2 miles away', address: '450 Main St.', contactName: 'Detective Sarah Jenkins', contactTitle: 'Head of Cyber & Financial Crimes', hours: 'Mon-Fri: 8AM - 5PM (24/7 for emergencies)' },
+        { id: '2', name: 'Northside Precinct', distance: '3.5 miles away', address: '1200 Northside Blvd.', contactName: 'Officer Marcus Thorne', contactTitle: 'Digital Fraud Specialist', hours: 'Tue-Sat: 9AM - 6PM' },
+        { id: '3', name: 'County Sheriff Substation', distance: '5.1 miles away', address: '88 County Line Rd.', contactName: 'Sgt. David Chen', contactTitle: 'Scam & Extortion Task Force', hours: 'Mon-Fri: 7AM - 3PM' },
+      ]);
+    })();
+  }, []);
+
+  const selectStation = (station: Station) => {
+    setSelectedStation(station);
+    Speech.speak(`Selected ${station.name}. Contact ${station.contactName}, ${station.contactTitle}.`, { rate: 0.9 });
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} contentContainerStyle={styles.content}>
       <View style={styles.topRow}>
+        <Text style={[styles.header, { color: theme.text }]}>Safe Haven Locator</Text>
+        <Text style={[styles.subHeader, { color: theme.subText }]}>{locationStatus}</Text>
+      </View>
+
+      {!selectedStation ? (
         <View>
-          <Text style={styles.header}>Safe Haven & Police Locator</Text>
-          <Text style={styles.subHeader}>
-            Find nearby precincts, operating hours, and in-person filing requirements.
-          </Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Select a nearby precinct:</Text>
+          {stations.map((station) => (
+            <TouchableOpacity key={station.id} style={[styles.stationCard, { backgroundColor: theme.card, borderColor: theme.border }]} onPress={() => selectStation(station)}>
+              <View style={styles.stationHeader}>
+                <Ionicons name="shield-checkmark" size={24} color={theme.primary} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.stationName, { color: theme.text }]}>{station.name}</Text>
+                  <Text style={[styles.stationDistance, { color: theme.primary }]}>{station.distance}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={theme.subText} />
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
-      </View>
-
-      <View style={styles.infoBanner}>
-        <Ionicons name="shield-checkmark" size={24} color="#1d4ed8" />
-        <Text style={styles.infoText}>
-          If you were physically threatened or robbed of your device, call 911 immediately. For financial scams, file an in-person report at your local precinct.
-        </Text>
-      </View>
-
-      <Text style={styles.sectionTitle}>Nearby Precincts & Cyber Desks:</Text>
-
-      {LOCAL_PRECINCTS.map((p) => (
-        <View key={p.id} style={styles.precinctCard}>
-          <View style={styles.precinctHeader}>
-            <Ionicons name="business-outline" size={20} color="#2563eb" />
-            <Text style={styles.precinctName}>{p.name}</Text>
-          </View>
-          <Text style={styles.precinctAddress}>{p.address}</Text>
-          <View style={styles.metaRow}>
-            <Ionicons name="time-outline" size={14} color="#64748b" />
-            <Text style={styles.metaText}>{p.hours}</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Ionicons name="navigate-outline" size={14} color="#64748b" />
-            <Text style={styles.metaText}>{p.distance}</Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.callBtn}
-            onPress={() => callNumber(p.phone)}
-          >
-            <Ionicons name="call" size={16} color="#ffffff" />
-            <Text style={styles.callBtnText}>Call Precinct: {p.phone}</Text>
+      ) : (
+        <View style={[styles.detailsCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => setSelectedStation(null)}>
+            <Ionicons name="arrow-back" size={20} color={theme.primary} />
+            <Text style={[styles.backBtnText, { color: theme.primary }]}>Back to List</Text>
           </TouchableOpacity>
-        </View>
-      ))}
 
-      <View style={styles.checklistCard}>
-        <View style={styles.checklistHeader}>
-          <Ionicons name="document-text-outline" size={22} color="#0f172a" />
-          <Text style={styles.checklistTitle}>What to Bring When Filing a Report:</Text>
-        </View>
-        {REQUIRED_DOCUMENTS.map((doc, idx) => (
-          <View key={idx} style={styles.docRow}>
-            <Text style={styles.docBullet}>•</Text>
-            <Text style={styles.docText}>{doc}</Text>
+          <Text style={[styles.detailsName, { color: theme.text }]}>{selectedStation.name}</Text>
+          <Text style={[styles.detailsAddress, { color: theme.subText }]}>{selectedStation.address} • {selectedStation.distance}</Text>
+
+          <View style={[styles.contactBox, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+            <Ionicons name="person-circle" size={40} color={theme.primary} />
+            <View style={{ marginLeft: 12, flex: 1 }}>
+              <Text style={[styles.contactName, { color: theme.text }]}>{selectedStation.contactName}</Text>
+              <Text style={[styles.contactTitle, { color: theme.primary }]}>{selectedStation.contactTitle}</Text>
+            </View>
           </View>
-        ))}
-      </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="time" size={20} color={theme.subText} />
+            <Text style={[styles.infoText, { color: theme.text }]}>Available: {selectedStation.hours}</Text>
+          </View>
+          
+          <View style={styles.infoRow}>
+            <Ionicons name="document-text" size={20} color={theme.subText} />
+            <Text style={[styles.infoText, { color: theme.text }]}>Bring: ID, printed bank statements, and scam screenshots.</Text>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   content: { padding: 20, paddingTop: 60, paddingBottom: 60 },
-  topRow: { marginBottom: 14 },
-  header: { fontSize: 26, fontWeight: '800', color: '#0f172a' },
-  subHeader: { fontSize: 14, color: '#475569', marginTop: 2 },
-  infoBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 18,
-  },
-  infoText: { fontSize: 13, fontWeight: '600', color: '#1e40af', flex: 1, lineHeight: 18 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1e293b', marginBottom: 10 },
-  precinctCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  precinctHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  precinctName: { fontSize: 16, fontWeight: '700', color: '#0f172a', flex: 1 },
-  precinctAddress: { fontSize: 14, color: '#475569', marginBottom: 8 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  metaText: { fontSize: 13, color: '#64748b' },
-  callBtn: {
-    marginTop: 12,
-    backgroundColor: '#2563eb',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  callBtnText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
-  checklistCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginTop: 8,
-  },
-  checklistHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  checklistTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  docRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  docBullet: { fontSize: 16, fontWeight: '700', color: '#2563eb' },
-  docText: { fontSize: 13, color: '#334155', flex: 1, lineHeight: 18 },
+  topRow: { marginBottom: 24 },
+  header: { fontSize: 26, fontWeight: '800' },
+  subHeader: { fontSize: 14, marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 16 },
+  stationCard: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 12 },
+  stationHeader: { flexDirection: 'row', alignItems: 'center' },
+  stationName: { fontSize: 16, fontWeight: '700' },
+  stationDistance: { fontSize: 14, fontWeight: '600', marginTop: 4 },
+  detailsCard: { padding: 20, borderRadius: 20, borderWidth: 1 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  backBtnText: { fontSize: 16, fontWeight: '700', marginLeft: 6 },
+  detailsName: { fontSize: 22, fontWeight: '800', marginBottom: 6 },
+  detailsAddress: { fontSize: 15, marginBottom: 20 },
+  contactBox: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 20 },
+  contactName: { fontSize: 18, fontWeight: '700' },
+  contactTitle: { fontSize: 14, fontWeight: '600', marginTop: 2 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  infoText: { fontSize: 15, marginLeft: 12, flex: 1, lineHeight: 22 },
 });
