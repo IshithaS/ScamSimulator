@@ -5,47 +5,43 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        tabBarActiveTintColor: '#2563eb',
         headerShown: false,
-        tabBarActiveTintColor: '#dc2626',
-        tabBarInactiveTintColor: '#6b7280',
-        tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopColor: '#e5e7eb',
-          height: 62,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
       }}
     >
       <Tabs.Screen
         name="simulate"
         options={{
-          title: 'Threat Inbox',
-          tabBarLabel: 'Simulate',
+          title: 'Simulate',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="shield-half-outline" size={size} color={color} />
+            <Ionicons name="shield-outline" size={size} color={color} />
           ),
         }}
       />
-
       <Tabs.Screen
         name="learn"
         options={{
           title: 'Daily Briefing',
-          tabBarLabel: 'Learn',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+            <Ionicons name="book-outline" size={size} color={color} />
           ),
         }}
       />
-
       <Tabs.Screen
         name="kit"
         options={{
           title: 'Defense Kit',
-          tabBarLabel: 'Defense Kit',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="medkit-outline" size={size} color={color} />
+            <Ionicons name="medical-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: 'Safe Haven',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="business-outline" size={size} color={color} />
           ),
         }}
       />

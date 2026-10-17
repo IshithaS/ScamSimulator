@@ -8,195 +8,24 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ThreatCard } from '../../components/ThreatCard';
+import { ReplyOption, SCENARIOS, ScamScenario } from '../../data/scenarios';
 
-interface ReplyOption {
-  text: string;
-  response: string;
-  isSafeChoice: boolean;
-}
-
-interface ScamScenario {
-  id: string;
-  channel: 'SMS Text' | 'Voicemail (AI Voice)' | 'Email' | 'DM / Social';
-  sender: string;
-  senderHandle: string;
-  timestamp: string;
-  subject?: string;
-  message: string;
-  isScam: boolean;
-  difficulty: 'Easy' | 'Medium' | 'Hard (AI Era)';
-  redFlags: string[];
-  explanation: string;
-  replyOptions: ReplyOption[];
-  hasLink?: boolean;
-  linkDestinationUrl?: string;
-}
-
-const SCENARIOS: ScamScenario[] = [
-  {
-    id: '1',
-    channel: 'SMS Text',
-    sender: 'USPS Delivery Alert',
-    senderHandle: '+1 (808) 555-0194',
-    timestamp: 'Today, 10:14 AM',
-    message:
-      'USPS Notice: Your package #US-948201 cannot be delivered due to an incomplete street address. Please confirm your address and pay the $0.30 redelivery fee within 12 hours or the item will be returned: https://usps-track-redelivery-portal.com/resolve',
-    isScam: true,
-    difficulty: 'Easy',
-    hasLink: true,
-    linkDestinationUrl: 'https://usps-track-redelivery-portal.com/resolve',
-    redFlags: [
-      'Came from a standard 10-digit phone number instead of an official USPS short code (like 28777).',
-      'Fake lookalike URL ("usps-track-redelivery-portal.com") instead of official "usps.com".',
-      'Demands a tiny "$0.30 fee" just to harvest your credit card number.',
-    ],
-    explanation:
-      'Classic "Smishing" (SMS Phishing). USPS never texts you from random numbers asking for credit card fees to fix an address.',
-    replyOptions: [
-      {
-        text: 'Reply: "Which package is this? Here is my card info."',
-        response: 'Scammer instantly logs your credit card details and charges $499.00 on your account!',
-        isSafeChoice: false,
-      },
-      {
-        text: 'Reply: "STOP" or ignore and delete the message.',
-        response: 'Correct! Never engage with or click links from unknown delivery texts.',
-        isSafeChoice: true,
-      },
-    ],
-  },
-  {
-    id: '2',
-    channel: 'Voicemail (AI Voice)',
-    sender: 'Unknown Caller (Sounds like Mom)',
-    senderHandle: 'No Caller ID • 0:24s',
-    timestamp: 'Today, 2:42 PM',
-    message:
-      '[Audio Transcript]: "Hey sweetie, my phone just died and I got into a minor fender bender. I am using a tow truck driver’s phone. My wallet is locked in the car—can you Zelle $380 to the driver’s number right now at (704) 555-0148 so he can release the car? Please hurry, my battery is at 2%."',
-    isScam: true,
-    difficulty: 'Hard (AI Era)',
-    redFlags: [
-      'Scammers only need 3 seconds of audio from social media to clone a family member’s voice using AI.',
-      'Extreme urgency ("Please hurry") + excuse why you cannot call them back ("using the driver’s phone").',
-      'Payment requested via Zelle to an unknown third party (Zelle transfers are instant and irreversible).',
-    ],
-    explanation:
-      'AI Voice Cloning Emergency Scam. Always hang up and call your family member’s actual phone number directly, or ask a "family safe word" question.',
-    replyOptions: [
-      {
-        text: 'Send $380 via Zelle immediately so Mom is not stranded.',
-        response: 'Money is instantly wired to a scammer overseas and cannot be recovered.',
-        isSafeChoice: false,
-      },
-      {
-        text: 'Hang up and call Mom directly on her real number to verify.',
-        response: 'Smart! Mom picks up at home totally fine. You just blocked an AI clone scam.',
-        isSafeChoice: true,
-      },
-    ],
-  },
-  {
-    id: '3',
-    channel: 'Email',
-    sender: 'University Financial Aid Office',
-    senderHandle: 'aid-disbursement@student-portal-verify.org',
-    timestamp: 'Yesterday, 4:15 PM',
-    subject: 'URGENT: Fall Tuition Grant Refund Pending ($1,450.00)',
-    message:
-      'Dear Student,\n\nYour $1,450.00 federal tuition grant refund has been processed. However, our system detected an outdated bank routing profile.\n\nClick below to sign in with your University NetID and password within 24 hours, or your grant will be forfeited.\n\nRegards,\nCampus Student Accounts',
-    isScam: true,
-    difficulty: 'Medium',
-    hasLink: true,
-    linkDestinationUrl: 'https://student-portal-verify.org/login',
-    redFlags: [
-      'Sender domain ends in ".org" ("student-portal-verify.org") instead of an official ".edu" school address.',
-      'Threatens that you will "forfeit" money in 24 hours to cause panic.',
-      'Phishes for your University NetID login so scammers can hijack your direct deposit profile.',
-    ],
-    explanation:
-      'College & Youth Targeted Phishing. Young adults lose millions annually to fake financial aid and campus job emails.',
-    replyOptions: [
-      {
-        text: 'Click the link and log in with your school username & password.',
-        response: 'Credential Harvested! Scammers now have access to your student portal and direct deposit settings.',
-        isSafeChoice: false,
-      },
-      {
-        text: 'Delete email and check your official university portal directly.',
-        response: 'Correct! Always navigate to official school portals independently rather than clicking email links.',
-        isSafeChoice: true,
-      },
-    ],
-  },
-  {
-    id: '4',
-    channel: 'SMS Text',
-    sender: 'Chase Fraud Prevention',
-    senderHandle: '72166',
-    timestamp: 'Yesterday, 6:05 PM',
-    message:
-      'Chase Fraud Alert: Did you attempt a $412.50 purchase at ELECTRONICS HUB MIAMI FL on card ending in 4821? Reply YES or NO. If NO, we will block the charge. Never share your passcode with anyone.',
-    isScam: false,
-    difficulty: 'Medium',
-    redFlags: [
-      'NO RED FLAGS — This is a legitimate bank security alert!',
-      'Sent from an official 5-digit bank short code (72166).',
-      'Does NOT include a shady link and explicitly warns you never to share passcodes.',
-    ],
-    explanation:
-      'Not every alert is a scam! Real bank texts ask simple YES/NO verification without links or passcode requests.',
-    replyOptions: [
-      {
-        text: 'Reply "NO" because you did not make that purchase.',
-        response: 'Correct! This safely blocks the fraudulent charge through official bank automated channels.',
-        isSafeChoice: true,
-      },
-      {
-        text: 'Ignore the text and throw away your credit card immediately.',
-        response: 'Unnecessary—this was a legitimate bank alert protecting your account.',
-        isSafeChoice: false,
-      },
-    ],
-  },
-  {
-    id: '5',
-    channel: 'DM / Social',
-    sender: 'Campus Brand Ambassador Recruiter',
-    senderHandle: '@stella_talent_recruiting',
-    timestamp: '2 days ago',
-    message:
-      'Hey! We loved your profile and want to send you free merch + pay you $300/week! We already e-mailed you a $500 check to cover starter gear—just mobile deposit the check today and Venmo $200 back to our graphic designer for custom promo codes!',
-    isScam: true,
-    difficulty: 'Medium',
-    redFlags: [
-      'The "Fake Check Overpayment" trick: They send a check and ask you to Venmo cash back.',
-      'Bank funds appear in 24 hours, but the fake check bounces 5 days later—leaving you down $200 of your own money.',
-      'Real employers never ask you to wire or Venmo money back to vendors.',
-    ],
-    explanation:
-      'Influencer & Remote Job Overpayment Scam. Currently the #1 scam targeting teens and college students on social media.',
-    replyOptions: [
-      {
-        text: 'Deposit the check in your app and Venmo the $200 back.',
-        response: 'The check bounces in 5 days! Your bank takes back the full $500 and you lose the $200 you Venmoed.',
-        isSafeChoice: false,
-      },
-      {
-        text: 'Block the account and report them for job fraud.',
-        response: 'Correct! Real companies never pay you with checks that require you to send cash back.',
-        isSafeChoice: true,
-      },
-    ],
-  },
-];
+const SCAM_TYPES = ['All (40)', ...Array.from(new Set(SCENARIOS.map((s) => s.scamType)))];
 
 export default function SimulateScreen() {
+  const [selectedType, setSelectedType] = useState<string>('All (40)');
   const [selectedScenario, setSelectedScenario] = useState<ScamScenario | null>(null);
   const [userVerdict, setUserVerdict] = useState<'scam' | 'safe' | null>(null);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [score, setScore] = useState<number>(0);
   const [selectedReply, setSelectedReply] = useState<ReplyOption | null>(null);
   const [linkModalVisible, setLinkModalVisible] = useState<boolean>(false);
+
+  const filteredScenarios =
+    selectedType === 'All (40)'
+      ? SCENARIOS
+      : SCENARIOS.filter((s) => s.scamType === selectedType);
 
   const handleDecision = (choice: 'scam' | 'safe') => {
     if (!selectedScenario) return;
@@ -220,100 +49,13 @@ export default function SimulateScreen() {
     setSelectedReply(null);
   };
 
-  const renderMessageUI = (item: ScamScenario) => {
-    if (item.channel === 'SMS Text' || item.channel === 'DM / Social') {
-      return (
-        <View style={styles.imessageWindow}>
-          <View style={styles.imessageHeader}>
-            <View style={styles.imessageAvatar}>
-              <Text style={styles.imessageAvatarText}>
-                {item.sender.charAt(0)}
-              </Text>
-            </View>
-            <Text style={styles.imessageSenderName}>{item.sender}</Text>
-            <Text style={styles.imessageHandle}>{item.senderHandle}</Text>
-          </View>
-
-          <View style={styles.chatBody}>
-            <Text style={styles.chatTimestampHeader}>{item.timestamp}</Text>
-            <View style={styles.incomingBubble}>
-              <Text style={styles.incomingBubbleText}>{item.message}</Text>
-              {item.hasLink && (
-                <TouchableOpacity
-                  style={styles.linkButtonBox}
-                  onPress={() => setLinkModalVisible(true)}
-                >
-                  <Ionicons name="globe-outline" size={16} color="#2563eb" />
-                  <Text style={styles.linkButtonText}>
-                    [ Tap Link: {item.linkDestinationUrl} ]
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </View>
-      );
-    }
-
-    if (item.channel === 'Email') {
-      return (
-        <View style={styles.emailContainer}>
-          <View style={styles.emailHeaderRow}>
-            <Text style={styles.emailLabel}>From:</Text>
-            <Text style={styles.emailValue}>{item.senderHandle}</Text>
-          </View>
-          <View style={styles.emailHeaderRow}>
-            <Text style={styles.emailLabel}>Subject:</Text>
-            <Text style={[styles.emailValue, { fontWeight: '700' }]}>
-              {item.subject}
-            </Text>
-          </View>
-          <View style={styles.emailDivider} />
-          <Text style={styles.emailBodyText}>{item.message}</Text>
-          {item.hasLink && (
-            <TouchableOpacity
-              style={[styles.linkButtonBox, { marginTop: 12 }]}
-              onPress={() => setLinkModalVisible(true)}
-            >
-              <Ionicons name="globe-outline" size={16} color="#2563eb" />
-              <Text style={styles.linkButtonText}>
-                [ Click Secure Portal Link ]
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.voicemailContainer}>
-        <View style={styles.vmTopRow}>
-          <Ionicons name="mic" size={20} color="#dc2626" />
-          <Text style={styles.vmTitle}>Visual Voicemail (AI Audio)</Text>
-          <Text style={styles.vmDuration}>0:24</Text>
-        </View>
-        <View style={styles.waveformRow}>
-          <View style={[styles.waveBar, { height: 14 }]} />
-          <View style={[styles.waveBar, { height: 28 }]} />
-          <View style={[styles.waveBar, { height: 36 }]} />
-          <View style={[styles.waveBar, { height: 20 }]} />
-          <View style={[styles.waveBar, { height: 30 }]} />
-          <View style={[styles.waveBar, { height: 12 }]} />
-          <View style={[styles.waveBar, { height: 24 }]} />
-        </View>
-        <Text style={styles.vmTranscriptLabel}>Transcript:</Text>
-        <Text style={styles.vmTranscriptText}>{item.message}</Text>
-      </View>
-    );
-  };
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.topRow}>
         <View>
           <Text style={styles.header}>Threat Inbox</Text>
           <Text style={styles.subHeader}>
-            Inspect incoming messages & spot AI-era traps.
+            10 Scam Types • 4 Examples Per Type (40 Total)
           </Text>
         </View>
         <View style={styles.scoreBadge}>
@@ -330,8 +72,40 @@ export default function SimulateScreen() {
 
       {!selectedScenario ? (
         <View>
-          <Text style={styles.sectionTitle}>Select a Message to Analyze:</Text>
-          {SCENARIOS.map((item) => {
+          {/* Horizontal Filter Bar for the 10 Simulation Types */}
+          <Text style={styles.sectionTitle}>Filter by Simulation Type (4 Examples Each):</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterScroll}
+            contentContainerStyle={styles.filterContent}
+          >
+            {SCAM_TYPES.map((type) => {
+              const active = selectedType === type;
+              return (
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setSelectedType(type)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      active && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {type}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={styles.sectionTitle}>
+            Showing {filteredScenarios.length} Simulations:
+          </Text>
+
+          {filteredScenarios.map((item) => {
             const isDone = completedIds.includes(item.id);
             return (
               <TouchableOpacity
@@ -347,7 +121,7 @@ export default function SimulateScreen() {
                   <View style={styles.channelBadge}>
                     <Text style={styles.channelBadgeText}>{item.channel}</Text>
                   </View>
-                  <Text style={styles.difficultyText}>{item.difficulty}</Text>
+                  <Text style={styles.difficultyText}>{item.scamType}</Text>
                 </View>
 
                 <Text style={styles.senderName}>{item.sender}</Text>
@@ -373,7 +147,10 @@ export default function SimulateScreen() {
             <Text style={styles.backButtonText}>Back to Inbox</Text>
           </TouchableOpacity>
 
-          {renderMessageUI(selectedScenario)}
+          <ThreatCard
+            scenario={selectedScenario}
+            onPressLink={() => setLinkModalVisible(true)}
+          />
 
           {!userVerdict ? (
             <View>
@@ -558,6 +335,17 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginBottom: 10,
   },
+  filterScroll: { marginBottom: 16 },
+  filterContent: { gap: 8, paddingRight: 16 },
+  filterChip: {
+    backgroundColor: '#e2e8f0',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  filterChipActive: { backgroundColor: '#dc2626' },
+  filterChipText: { fontSize: 12, fontWeight: '700', color: '#334155' },
+  filterChipTextActive: { color: '#ffffff' },
   inboxCard: {
     backgroundColor: '#ffffff',
     padding: 16,
@@ -612,112 +400,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   backButtonText: { fontSize: 14, fontWeight: '600', color: '#374151' },
-  imessageWindow: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    padding: 14,
-    marginBottom: 16,
-  },
-  imessageHeader: {
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-    paddingBottom: 12,
-    marginBottom: 14,
-  },
-  imessageAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#cbd5e1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  imessageAvatarText: { fontSize: 18, fontWeight: '700', color: '#ffffff' },
-  imessageSenderName: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-  imessageHandle: { fontSize: 12, color: '#64748b' },
-  chatBody: { paddingHorizontal: 4 },
-  chatTimestampHeader: {
-    fontSize: 11,
-    color: '#94a3b8',
-    textAlign: 'center',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-  },
-  incomingBubble: {
-    backgroundColor: '#e5e7eb',
-    padding: 14,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-  },
-  incomingBubbleText: { fontSize: 15, color: '#1f2937', lineHeight: 22 },
-  linkButtonBox: {
-    marginTop: 10,
-    backgroundColor: '#eff6ff',
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  linkButtonText: { fontSize: 13, fontWeight: '700', color: '#2563eb' },
-  emailContainer: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
-  },
-  emailHeaderRow: { flexDirection: 'row', marginBottom: 6 },
-  emailLabel: { fontSize: 13, fontWeight: '700', color: '#6b7280', width: 65 },
-  emailValue: { fontSize: 13, color: '#1f2937', flex: 1 },
-  emailDivider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 8 },
-  emailBodyText: { fontSize: 14, color: '#374151', lineHeight: 21 },
-  voicemailContainer: {
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fca5a5',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-  },
-  vmTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  vmTitle: { fontSize: 14, fontWeight: '700', color: '#991b1b', flex: 1 },
-  vmDuration: { fontSize: 12, color: '#b91c1c', fontWeight: '600' },
-  waveformRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    height: 40,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  waveBar: { width: 4, backgroundColor: '#dc2626', borderRadius: 2 },
-  vmTranscriptLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#991b1b',
-    marginBottom: 2,
-  },
-  vmTranscriptText: {
-    fontSize: 13,
-    color: '#7f1d1d',
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
   decisionRow: { flexDirection: 'row', gap: 12 },
   decisionBtn: {
     flex: 1,
